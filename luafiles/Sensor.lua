@@ -1,13 +1,23 @@
 
-print("Booting")
+--sets the code time
+Starttime = tmr.now
 
-GPIO2 = 4
-TIMER = 0
+ESP8266_STATUS 
+INITIALIZED (1<<0)
 
+function init_ESP8266()
 
-gpio.mode(GPIO2,gpio.INT,gpio.PULLUP)
+	--init hardware
+	GPIO2 = 4 --pushbutton for apmode
+	GPIO0 = 2 --should be changed, is the pin for DHT22
+	
+	--initialize the GPIO for pushbutton
+	gpio.mode(GPIO2,gpio.INT,gpio.PULLUP)
 
-
+	--Maybe works?????????
+	ESP8266_STATUS = ESP8266_STATUS | INITIALIZED
+	
+end
 
 function save_setting(name, value)
   file.open(name, 'w') -- you don't need to do file.remove if you use the 'w' method of writing
@@ -67,6 +77,8 @@ end
 
 function apmode()
 	
+	print("Starting in AP-mode")
+	
 	wifi.setmode(wifi.SOFTAP)
 	led1 = 3 -- GPIO 0
 	led2 = 4 -- GPIO 2
@@ -105,26 +117,58 @@ function apmode()
         client:close();
         collectgarbage();
 		--add a savebutton, that will exit the program from apmode and runn the maincode.
+		
+		return
+		
 		end)
 	end)
 end
 
-Starttime = tmr.now
+function senddata()
 
+	print("Sends data")
+	
+	wifi.setmode(wifi.STATION)
+	wifi.sta.config(read_setting(SSID), read_setting(PASS))
+	
+	--Initialize DHT22 module
+	dht22 = require("dht22")
+	dht22.read(PIN)
+	
+	t = dht22.getTemperature()
+	h = dht22.getHumidity()
+	
+	
+	-- release module
+	dht22 = nil
+	package.loaded["dht22"]=nil
+
+	--NOT FINNISHED
+	--Send data from temmp and humiditysensor
+	
+	print("data sent")
+
+end
+
+--Checks if the module is initialized
+if ESP8266_STATUS != 0x01 then
+	print("Initialize hardware")
+	init_ESP8266()
+end
 
 --If button is pressed, go in to AP-mode
 gpio.trig(GPIO2, 'up', apmode)
 
-wifi.setmode(wifi.STATION)
-wifi.sta.config(read_setting(SSID), read_setting(PASS))
-
---if the timer is met, save the tempvalue to the file
-if TIMER == read_setting(timer) then
-	--save_temp(sensordata, ((tmr.now()-startTime)/(1000)))
-	end
-
+--Sends data to server
+senddata()
 	
-Currenttime update
+print("Time to sleep zzz") --not implemented yet
+--system_deep_sleep((read_setting(start)-read_setting(end)))	
+	
+CompleteTime = (tmr.now()-startTime)/(1000)
+	
+--Updates time	
+Currenttime = currencttime + CompleteTime
 
 
 
