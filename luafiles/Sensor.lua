@@ -23,6 +23,9 @@ function save_setting(name, value)
   file.open(name, 'w') -- you don't need to do file.remove if you use the 'w' method of writing
   file.writeline(value)
   file.close()
+  print("Value on save setting: ")
+  print(value)
+  
 end
 
 function read_setting(name)
@@ -79,49 +82,59 @@ function apmode()
 	
 	print("Starting in AP-mode")
 	
-	wifi.setmode(wifi.SOFTAP)
-	led1 = 3 -- GPIO 0
-	led2 = 4 -- GPIO 2
-	gpio.mode(led1, gpio.OUTPUT)
-	gpio.mode(led2, gpio.OUTPUT)
-	srv=net.createServer(net.TCP)
-	srv:listen(80,function(conn)
-    conn:on("receive", function(client,request)
-        local buf = "";
-        local _, _, method, path, vars = string.find(request, "([A-Z]+) (.+)?(.+) HTTP");
-        if(method == nil)then
-            _, _, method, path = string.find(request, "([A-Z]+) (.+) HTTP");
-        end
-        local _GET = {}
-        if (vars ~= nil)then
-            for k, v in string.gmatch(vars, "(%w+)=(%w+)&*") do
-                _GET[k] = v
-            end
-        end
-        data = "<title>Home Automation Using ESP</title>";
-        data = data.."<center><h1>Robo India's <br> Tutorial on Home Automation</h1>";
-        data = data.."<p>GPIO0 - (Pin3) <a href=\"?req=ON1\"><button>ON</button></a>&nbsp;<a href=\"?req=OFF1\"><button>OFF</button></a></p>";
-        data = data.."<p>GPIO2 - (Pin4) <a href=\"?req=ON2\"><button>ON</button></a>&nbsp;<a href=\"?req=OFF2\"><button>OFF</button></a></p>";        
-        local _on,_off = "",""
-        if(_GET.req == "ON1")then
-              save_setting('SSID', 10)
-        elseif(_GET.req == "OFF1")then
-              save_setting('PASS', 15)
-        elseif(_GET.req == "ON2")then
-              save_setting('timer', 100)
-        elseif(_GET.req == "OFF2")then
-              save_setting('start', 5)
-			  save_setting('end', 2)
-        end
-        client:send(data);
-        client:close();
-        collectgarbage();
-		--add a savebutton, that will exit the program from apmode and runn the maincode.
-		
-		return
-		
+	TRUE = 1
+	FALSE = 0
+	
+	while saved == FALSE do
+		wifi.setmode(wifi.SOFTAP)
+		-- led1 = 3 -- GPIO 0
+		-- led2 = 4 -- GPIO 2
+		-- gpio.mode(led1, gpio.OUTPUT)
+		-- gpio.mode(led2, gpio.OUTPUT)
+		srv=net.createServer(net.TCP)
+		srv:listen(80,function(conn)
+		conn:on("receive", function(client,request)
+			local buf = "";
+			local _, _, method, path, vars = string.find(request, "([A-Z]+) (.+)?(.+) HTTP");
+			if(method == nil)then
+				_, _, method, path = string.find(request, "([A-Z]+) (.+) HTTP");
+			end
+			local _GET = {}
+			if (vars ~= nil)then
+				for k, v in string.gmatch(vars, "(%w+)=(%w+)&*") do
+					_GET[k] = v
+				end
+			end
+			data = "<title>Setup for sensor</title>";
+			data = data.."<center><h1>Here set the settings for connection and messurements.</h1>";
+			data = data.."<h1> format is 192.168.2.1/ssid=(yourssid)&pass=(yourpass)!<br><br>Don't forget the exclamation!!!!</h1>"
+			data = data.."<p>GPIO0 - (Pin3) <a href=\"?req=ON1\"><button>ON</button></a>&nbsp;<a href=\"?req=OFF1\"><button>OFF</button></a></p>";
+			data = data.."<p>GPIO2 - (Pin4) <a href=\"?req=ON2\"><button>ON</button></a>&nbsp;<a href=\"?req=OFF2\"><button>OFF</button></a></p>";   
+			--addfunction to save name of sensor..
+			data = data.."<p>Save? <a href=\"?req=SAVED\"><button>YES</button></a>&nbsp";
+			local _on,_off = "",""
+			if(_GET.req == "ON1")then
+				  save_setting('SSID', 10)
+			elseif(_GET.req == "OFF1")then
+				  save_setting('PASS', 15)
+			elseif(_GET.req == "ON2")then
+				  save_setting('timer', 100)
+			elseif(_GET.req == "OFF2")then
+				  save_setting('start', 5)
+				  save_setting('end', 2)
+			elseif(_GET.rew == "SAVED")then
+					saved = TRUE
+			end
+			client:send(data);
+			client:close();
+			collectgarbage();
+			--add a savebutton, that will exit the program from apmode and runn the maincode.
+			end)
 		end)
-	end)
+	end
+	
+	return
+	
 end
 
 function senddata()
@@ -138,6 +151,10 @@ function senddata()
 	t = dht22.getTemperature()
 	h = dht22.getHumidity()
 	
+	print("temp: ")
+	print(t)
+	print("humidity: ")
+	print(h)
 	
 	-- release module
 	dht22 = nil
