@@ -1,5 +1,5 @@
 
---sets the code time
+--Starts the runtime check
 Starttime = tmr.now
 
 ESP8266_STATUS 
@@ -25,6 +25,7 @@ function save_setting(name, value)
   file.close()
   print("Value on save setting: ")
   print(value)
+  return
   
 end
 
@@ -133,13 +134,16 @@ function apmode()
 		end)
 	end
 	
+	--maybe add some form of check, so if this is the first time the
+	--program is run and no settings is initialized, it will automatically
+	--start in ap mode
 	return
 	
 end
 
 function senddata()
 
-	print("Sends data")
+	print("Sending data")
 	
 	wifi.setmode(wifi.STATION)
 	wifi.sta.config(read_setting(SSID), read_setting(PASS))
@@ -164,22 +168,24 @@ function senddata()
 	--Send data from temmp and humiditysensor
 	
 	print("data sent")
+	
+	return
 
 end
 
 --Checks if the module is initialized
 if ESP8266_STATUS != 0x01 then
-	print("Initialize hardware")
+	print("Initializing hardware")
 	init_ESP8266()
 end
 
 --If button is pressed, go in to AP-mode
 gpio.trig(GPIO2, 'up', apmode)
 
---Sends data to server
+--Sends temp and humidity data to server
 senddata()
 	
-print("Time to sleep zzz") --not implemented yet
+--print("Time to sleep zzz") --not implemented yet
 --system_deep_sleep((read_setting(start)-read_setting(end)))	
 	
 CompleteTime = (tmr.now()-startTime)/(1000)
